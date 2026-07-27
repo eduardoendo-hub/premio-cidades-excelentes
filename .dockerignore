@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+coolify.env
+google-service-account*.json
+credentials*.json
+uploads/*
+!uploads/.gitkeep
+data/mirror.log
+data/mirror-failures.json
+data/inscricoes-fallback.jsonl
+.git
+.DS_Store
+*.log

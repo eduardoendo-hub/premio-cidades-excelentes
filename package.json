@@ -1,0 +1,22 @@
+{
+  "name": "premio-cidades-excelentes",
+  "version": "1.0.0",
+  "description": "Site estático espelhado + backend do formulário Envie seu Projeto (Google Sheets + upload PDF + e-mails)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "mirror": "node tools/mirror.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "googleapis": "^144.0.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.16"
+  }
+}
