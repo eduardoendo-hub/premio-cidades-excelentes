@@ -10,6 +10,25 @@ function bool(v, def = false) {
   return ["1", "true", "yes", "sim"].includes(String(v).toLowerCase());
 }
 
+// Lê a chave privada do Google de forma robusta:
+// 1) GOOGLE_PRIVATE_KEY_B64 (base64 do PEM) — à prova de problemas de \n/aspas
+// 2) GOOGLE_PRIVATE_KEY — normaliza aspas e \n
+function normalizePrivateKey() {
+  const b64 = process.env.GOOGLE_PRIVATE_KEY_B64;
+  if (b64 && b64.trim()) {
+    try {
+      return Buffer.from(b64.trim(), "base64").toString("utf8");
+    } catch {
+      /* cai no método abaixo */
+    }
+  }
+  let k = (process.env.GOOGLE_PRIVATE_KEY || "").trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1);
+  }
+  return k.replace(/\\r/g, "").replace(/\\n/g, "\n");
+}
+
 export const config = {
   root: ROOT,
   siteDir: path.join(ROOT, "site"),
@@ -24,7 +43,7 @@ export const config = {
     // Caminho para o JSON da service account OU credenciais inline via env
     credentialsFile: process.env.GOOGLE_APPLICATION_CREDENTIALS || "",
     clientEmail: process.env.GOOGLE_CLIENT_EMAIL || "",
-    privateKey: (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+    privateKey: normalizePrivateKey(),
   },
 
   // E-mail (Gmail / Google Workspace via SMTP)
