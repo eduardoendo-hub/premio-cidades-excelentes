@@ -1,7 +1,7 @@
 // Envio de e-mails via SMTP (Gmail / Google Workspace) com nodemailer.
 import nodemailer from "nodemailer";
 import { config } from "./config.js";
-import { PROJETO_FIELDS } from "./fields.js";
+import { PROJETO_FIELDS, EMAIL_LAYOUT } from "./fields.js";
 import { normalizeValue } from "./validation.js";
 
 let transporter = null;
@@ -27,41 +27,70 @@ function esc(s) {
     .replace(/>/g, "&gt;");
 }
 
-function buildRowsHtml(data) {
-  return PROJETO_FIELDS.map((f) => {
-    const v = normalizeValue(data[f.key]) || "—";
-    return `<tr>
-      <td style="padding:6px 10px;border:1px solid #e0e0e0;background:#f7f7f7;font-weight:600;vertical-align:top;white-space:nowrap">${esc(f.label)}</td>
-      <td style="padding:6px 10px;border:1px solid #e0e0e0;white-space:pre-wrap">${esc(v)}</td>
-    </tr>`;
-  }).join("\n");
+// Monta o corpo em TEXTO puro, no mesmo formato do site antigo (Elementor)
+export function buildOrgEmailText(data, meta) {
+  const lines = [];
+  for (const grp of EMAIL_LAYOUT) {
+    lines.push(grp.section);
+    for (const [key, label] of grp.items) {
+      lines.push(`${label}: ${normalizeValue(data[key])}`);
+    }
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  if (meta.dateLong) lines.push(`Date: ${meta.dateLong}`);
+  if (meta.time) lines.push(`Time: ${meta.time}`);
+  if (meta.pageUrl) lines.push(`Page URL: ${meta.pageUrl}`);
+  if (meta.userAgent) lines.push(`User Agent: ${meta.userAgent}`);
+  if (meta.ip) lines.push(`Remote IP: ${meta.ip}`);
+  lines.push("Powered by: Band");
+  return lines.join("\n");
 }
 
-// E-mail para a organização, com o PDF em anexo
+// Versão HTML (mesmo conteúdo/ordem, seções em negrito) + link do PDF
+function buildOrgEmailHtml(data, meta, fileName) {
+  const parts = [];
+  for (const grp of EMAIL_LAYOUT) {
+    parts.push(`<p style="margin:14px 0 4px;font-weight:bold">${esc(grp.section)}</p>`);
+    for (const [key, label] of grp.items) {
+      parts.push(
+        `<div style="margin:2px 0"><strong>${esc(label)}:</strong> ${esc(normalizeValue(data[key])).replace(/\n/g, "<br>")}</div>`
+      );
+    }
+  }
+  const pdf = meta.fileUrl
+    ? `<p style="margin-top:16px"><strong>PDF do projeto:</strong> ${esc(fileName)} &nbsp; <a href="${esc(meta.fileUrl)}">⬇ Baixar PDF</a><br><span style="color:#666;font-size:12px">(o PDF também está anexado a este e-mail)</span></p>`
+    : "";
+  const footer = [
+    meta.dateLong ? `Date: ${esc(meta.dateLong)}` : "",
+    meta.time ? `Time: ${esc(meta.time)}` : "",
+    meta.pageUrl ? `Page URL: ${esc(meta.pageUrl)}` : "",
+    meta.userAgent ? `User Agent: ${esc(meta.userAgent)}` : "",
+    meta.ip ? `Remote IP: ${esc(meta.ip)}` : "",
+    "Powered by: Band",
+  ].filter(Boolean).join("<br>");
+  return `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:14px;max-width:760px">
+    ${parts.join("\n")}
+    ${pdf}
+    <hr style="margin:18px 0;border:none;border-top:1px solid #ddd">
+    <div style="color:#666;font-size:12px">${footer}</div>
+  </div>`;
+}
+
+// E-mail para a organização, com o PDF em anexo (formato idêntico ao site antigo)
 export async function sendOrgEmail(data, meta, fileBuffer, fileName) {
   if (!config.mail.enabled) return { skipped: true };
   const t = getTransporter();
-  const html = `
-  <div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:720px">
-    <h2 style="color:#003a70">Nova inscrição — Prêmio Cidades Excelentes 2026</h2>
-    <p><strong>Projeto:</strong> ${esc(normalizeValue(data.nome_projeto))}<br>
-       <strong>Município:</strong> ${esc(normalizeValue(data.cidade))} / ${esc(normalizeValue(data.estado))}<br>
-       <strong>Recebido em:</strong> ${esc(meta.timestamp)}</p>
-    <table style="border-collapse:collapse;width:100%;font-size:13px">${buildRowsHtml(data)}</table>
-    <p style="margin-top:16px">
-      <strong>PDF do projeto:</strong> ${esc(fileName)}<br>
-      ${meta.fileUrl ? `<a href="${esc(meta.fileUrl)}" style="display:inline-block;margin-top:6px;padding:8px 16px;background:#003a70;color:#fff;text-decoration:none;border-radius:4px">⬇ Baixar PDF</a>` : ""}
-      <br><span style="color:#666;font-size:12px">(o PDF também vai anexado a este e-mail)</span>
-    </p>
-  </div>`;
 
   return t.sendMail({
     from: config.mail.from,
     to: config.mail.to,
     bcc: config.mail.bcc || undefined,
     replyTo: normalizeValue(data.email) || undefined,
-    subject: `[Inscrição 2026] ${normalizeValue(data.nome_projeto)} — ${normalizeValue(data.cidade)}/${normalizeValue(data.estado)}`,
-    html,
+    subject: "Projeto enviado pelo site Prêmio Band Cidades Excelentes",
+    text: buildOrgEmailText(data, meta),
+    html: buildOrgEmailHtml(data, meta, fileName),
     attachments: fileBuffer
       ? [{ filename: fileName, content: fileBuffer, contentType: "application/pdf" }]
       : [],
