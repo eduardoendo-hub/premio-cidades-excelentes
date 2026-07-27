@@ -72,6 +72,16 @@ async function ensureHeader(sheets) {
   }
 }
 
+// Teste leve de conectividade/permissão com a planilha (para /api/_diag)
+export async function pingSheets() {
+  const sheets = await getClient();
+  await sheets.spreadsheets.get({
+    spreadsheetId: config.sheets.spreadsheetId,
+    fields: "properties.title",
+  });
+  return { ok: true };
+}
+
 // data: objeto com os campos do formulário; meta: { fileName, fileUrl, timestamp }
 export async function appendInscricao(data, meta) {
   if (!config.sheets.enabled) return { skipped: true };

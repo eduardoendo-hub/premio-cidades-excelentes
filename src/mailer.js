@@ -13,6 +13,9 @@ function getTransporter() {
     port: config.mail.port,
     secure: config.mail.secure,
     auth: { user: config.mail.user, pass: config.mail.pass },
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
   });
   return transporter;
 }

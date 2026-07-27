@@ -29,6 +29,49 @@ app.get("/healthz", (_req, res) => {
   res.json({ ok: true, missingConfig: missingConfig() });
 });
 
+// ---- Diagnóstico (Sheets + portas SMTP) — para depurar conectividade do host ----
+app.get("/api/_diag", async (req, res) => {
+  if (req.query.key !== (process.env.DIAG_KEY || "premio-diag-2026")) {
+    return res.status(403).json({ ok: false });
+  }
+  const out = { sheets: null, smtp465: null, smtp587: null };
+
+  // Sheets (HTTPS 443)
+  try {
+    const t0 = Date.now();
+    const { pingSheets } = await import("./sheets.js");
+    await pingSheets();
+    out.sheets = { ok: true, ms: Date.now() - t0 };
+  } catch (e) {
+    out.sheets = { ok: false, error: e.message };
+  }
+
+  // Testa portas SMTP do Gmail
+  const nodemailer = (await import("nodemailer")).default;
+  for (const [key, port, secure] of [
+    ["smtp465", 465, true],
+    ["smtp587", 587, false],
+  ]) {
+    const t0 = Date.now();
+    try {
+      const t = nodemailer.createTransport({
+        host: config.mail.host,
+        port,
+        secure,
+        auth: { user: config.mail.user, pass: config.mail.pass },
+        connectionTimeout: 12000,
+        greetingTimeout: 8000,
+        socketTimeout: 12000,
+      });
+      await t.verify();
+      out[key] = { ok: true, ms: Date.now() - t0 };
+    } catch (e) {
+      out[key] = { ok: false, ms: Date.now() - t0, error: e.message };
+    }
+  }
+  res.json(out);
+});
+
 function timestamp() {
   return new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
@@ -63,34 +106,34 @@ app.post("/api/inscricao", (req, res) => {
       await fsp.writeFile(filePath, file.buffer);
       const fileUrl = `/uploads/${fileName}`;
 
-      // dispara integrações; não deixa o usuário na mão se uma falhar
-      const tasks = [
-        appendInscricao(body, { fileName, fileUrl, timestamp: ts }),
-        sendOrgEmail(body, { timestamp: ts }, file.buffer, file.originalname),
-      ];
-      const names = ["sheets", "orgEmail"];
-      if (config.mail.confirmation) {
-        tasks.push(sendConfirmationEmail(body));
-        names.push("confirmEmail");
-      }
-      const results = await Promise.allSettled(tasks);
-
-      const problems = results
-        .map((r, i) => ({ r, name: names[i] }))
-        .filter((x) => x.r.status === "rejected")
-        .map((x) => `${x.name}: ${x.r.reason?.message || x.r.reason}`);
-
-      if (problems.length) {
-        console.error("[inscricao] integrações com problema:", problems);
-        // Log persistente para não perder o dado mesmo se integração falhar
-        await appendFallbackLog(body, fileName, ts, problems);
+      // 1) Grava no Sheets (fonte da verdade). Se falhar, registra fallback.
+      try {
+        await appendInscricao(body, { fileName, fileUrl, timestamp: ts });
+      } catch (e) {
+        console.error("[inscricao] Sheets falhou:", e.message);
+        await appendFallbackLog(body, fileName, ts, ["sheets: " + e.message]);
       }
 
-      return res.json({
-        ok: true,
-        message: "Inscrição recebida com sucesso!",
-        warnings: problems.length ? problems : undefined,
-      });
+      // 2) Responde já ao usuário — não espera o e-mail (pode ser lento/bloqueado no host)
+      res.json({ ok: true, message: "Inscrição recebida com sucesso!" });
+
+      // 3) E-mails em segundo plano (best-effort); falha vira log, não trava o usuário
+      (async () => {
+        try {
+          await sendOrgEmail(body, { timestamp: ts }, file.buffer, file.originalname);
+        } catch (e) {
+          console.error("[inscricao] e-mail ADM falhou:", e.message);
+          await appendFallbackLog(body, fileName, ts, ["orgEmail: " + e.message]);
+        }
+        if (config.mail.confirmation) {
+          try {
+            await sendConfirmationEmail(body);
+          } catch (e) {
+            console.error("[inscricao] e-mail confirmação falhou:", e.message);
+          }
+        }
+      })();
+      return;
     } catch (e) {
       console.error("[inscricao] erro:", e);
       return res.status(500).json({ ok: false, message: "Erro interno ao processar a inscrição." });
