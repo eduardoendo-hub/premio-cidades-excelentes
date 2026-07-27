@@ -29,48 +29,6 @@ app.get("/healthz", (_req, res) => {
   res.json({ ok: true, missingConfig: missingConfig() });
 });
 
-// ---- Diagnóstico (Sheets + portas SMTP) — para depurar conectividade do host ----
-app.get("/api/_diag", async (req, res) => {
-  if (req.query.key !== (process.env.DIAG_KEY || "premio-diag-2026")) {
-    return res.status(403).json({ ok: false });
-  }
-  const out = { sheets: null, smtp465: null, smtp587: null };
-
-  // Sheets (HTTPS 443)
-  try {
-    const t0 = Date.now();
-    const { pingSheets } = await import("./sheets.js");
-    await pingSheets();
-    out.sheets = { ok: true, ms: Date.now() - t0 };
-  } catch (e) {
-    out.sheets = { ok: false, error: e.message };
-  }
-
-  // Testa portas SMTP do Gmail
-  const nodemailer = (await import("nodemailer")).default;
-  for (const [key, port, secure] of [
-    ["smtp465", 465, true],
-    ["smtp587", 587, false],
-  ]) {
-    const t0 = Date.now();
-    try {
-      const t = nodemailer.createTransport({
-        host: config.mail.host,
-        port,
-        secure,
-        auth: { user: config.mail.user, pass: config.mail.pass },
-        connectionTimeout: 12000,
-        greetingTimeout: 8000,
-        socketTimeout: 12000,
-      });
-      await t.verify();
-      out[key] = { ok: true, ms: Date.now() - t0 };
-    } catch (e) {
-      out[key] = { ok: false, ms: Date.now() - t0, error: e.message };
-    }
-  }
-  res.json(out);
-});
 
 function timestamp() {
   return new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
