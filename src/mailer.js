@@ -27,18 +27,23 @@ function esc(s) {
     .replace(/>/g, "&gt;");
 }
 
-// Monta o corpo em TEXTO puro, no mesmo formato do site antigo (Elementor)
+// Valor de um campo: anexo_pdf mostra a URL do PDF (como no site antigo)
+function fieldValue(key, data, meta) {
+  if (key === "anexo_pdf") return meta.fileUrl || "";
+  return normalizeValue(data[key]);
+}
+
+// Monta o corpo em TEXTO puro, idêntico ao site antigo (Elementor)
 export function buildOrgEmailText(data, meta) {
   const lines = [];
   for (const grp of EMAIL_LAYOUT) {
     lines.push(grp.section);
     for (const [key, label] of grp.items) {
-      lines.push(`${label}: ${normalizeValue(data[key])}`);
+      const val = fieldValue(key, data, meta);
+      lines.push(label === "__VALUE_ONLY__" ? `${val}` : `${label}: ${val}`);
     }
   }
-  lines.push("");
-  lines.push("---");
-  lines.push("");
+  lines.push("", "---", "");
   if (meta.dateLong) lines.push(`Date: ${meta.dateLong}`);
   if (meta.time) lines.push(`Time: ${meta.time}`);
   if (meta.pageUrl) lines.push(`Page URL: ${meta.pageUrl}`);
@@ -48,20 +53,21 @@ export function buildOrgEmailText(data, meta) {
   return lines.join("\n");
 }
 
-// Versão HTML (mesmo conteúdo/ordem, seções em negrito) + link do PDF
-function buildOrgEmailHtml(data, meta, fileName) {
+// Versão HTML (mesmo conteúdo/ordem, seções em negrito)
+function buildOrgEmailHtml(data, meta) {
   const parts = [];
   for (const grp of EMAIL_LAYOUT) {
     parts.push(`<p style="margin:14px 0 4px;font-weight:bold">${esc(grp.section)}</p>`);
     for (const [key, label] of grp.items) {
-      parts.push(
-        `<div style="margin:2px 0"><strong>${esc(label)}:</strong> ${esc(normalizeValue(data[key])).replace(/\n/g, "<br>")}</div>`
-      );
+      const valHtml = esc(fieldValue(key, data, meta)).replace(/\n/g, "<br>");
+      if (label === "__VALUE_ONLY__") {
+        parts.push(`<div style="margin:2px 0">${valHtml}</div>`);
+      } else {
+        const labelHtml = esc(label).replace(/\n/g, "<br>");
+        parts.push(`<div style="margin:2px 0"><strong>${labelHtml}:</strong> ${valHtml}</div>`);
+      }
     }
   }
-  const pdf = meta.fileUrl
-    ? `<p style="margin-top:16px"><strong>PDF do projeto:</strong> ${esc(fileName)} &nbsp; <a href="${esc(meta.fileUrl)}">⬇ Baixar PDF</a><br><span style="color:#666;font-size:12px">(o PDF também está anexado a este e-mail)</span></p>`
-    : "";
   const footer = [
     meta.dateLong ? `Date: ${esc(meta.dateLong)}` : "",
     meta.time ? `Time: ${esc(meta.time)}` : "",
@@ -72,7 +78,6 @@ function buildOrgEmailHtml(data, meta, fileName) {
   ].filter(Boolean).join("<br>");
   return `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:14px;max-width:760px">
     ${parts.join("\n")}
-    ${pdf}
     <hr style="margin:18px 0;border:none;border-top:1px solid #ddd">
     <div style="color:#666;font-size:12px">${footer}</div>
   </div>`;
@@ -90,7 +95,7 @@ export async function sendOrgEmail(data, meta, fileBuffer, fileName) {
     replyTo: normalizeValue(data.email) || undefined,
     subject: "Projeto enviado pelo site Prêmio Band Cidades Excelentes",
     text: buildOrgEmailText(data, meta),
-    html: buildOrgEmailHtml(data, meta, fileName),
+    html: buildOrgEmailHtml(data, meta),
     attachments: fileBuffer
       ? [{ filename: fileName, content: fileBuffer, contentType: "application/pdf" }]
       : [],

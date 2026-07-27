@@ -42,6 +42,8 @@ export const FILE_FIELD = {
 
 // Layout do e-mail para o ADM — replica o formato do site antigo (Elementor):
 // seções + perguntas completas como rótulo.
+// Formato do e-mail do site antigo (Elementor), porém com os ERROS corrigidos:
+// "TERCEIROS" (sem duplicar), um só ":" e sem espaços sobrando.
 export const EMAIL_LAYOUT = [
   {
     section: "Responsável pela Inscrição:",
@@ -70,7 +72,7 @@ export const EMAIL_LAYOUT = [
       ["Data_Termino", "Quando foi/será seu término?"],
       ["principais_acoes", "Informar as principais ações"],
       ["custo_financeiro", "Qual o custo financeiro estimado/realizado para o desenvolvimento do projeto? Qual a fonte de financiamento?"],
-      ["pessoas_envolvidas", "Quantas pessoas diretamente envolvidas no desenvolvimento do projeto? Quais os parceiros estratégicos envolvidos? (Outros municípios, secretarias, empresas, ONGs, etc)."],
+      ["pessoas_envolvidas", "Quantas pessoas diretamente envolvidas no desenvolvimento do projeto? Quais os parceiros estratégicos envolvidos? (Outros municípios, secretarias, empresas, ONGs, etc.)"],
     ],
   },
   {
@@ -80,8 +82,9 @@ export const EMAIL_LAYOUT = [
       ["repercussao_midia", "Como ponto importante da avaliação do projeto, gostaríamos de saber se esse projeto teve repercussão na mídia"],
       ["link_materias", "Solicitamos que envie o link das matérias de jornais e revistas que comprove a repercussão"],
       ["link_depoimentos", "Solicitamos que envie o link com os depoimentos formais de cidadãos (Nome completo, CPF e assinatura) que comprove a repercussão"],
+      // anexo_pdf: o valor é a URL do PDF; termos_condicoes: só o valor ("on"), sem rótulo
       ["anexo_pdf", "Com o objetivo de melhor contextualizar o projeto, solicitamos que sejam anexados fotos, apresentações, termos de abertura, relatórios, etc. Tudo em um (1) arquivo no formato PDF de até 10 páginas e tamanho de 10 mb."],
-      ["termos_condicoes", "Li e aceito termos e condições"],
+      ["termos_condicoes", "__VALUE_ONLY__"],
     ],
   },
 ];
