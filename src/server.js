@@ -62,7 +62,10 @@ app.post("/api/inscricao", (req, res) => {
       const fileName = `${stamp}_${rand}_${safeName(file.originalname)}`;
       const filePath = path.join(config.uploadsDir, fileName);
       await fsp.writeFile(filePath, file.buffer);
-      const fileUrl = `/uploads/${fileName}`;
+      // URL completa e clicável do PDF (para a planilha e o e-mail)
+      const baseUrl =
+        config.publicBaseUrl || `${req.protocol}://${req.get("host")}`;
+      const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
       // 1) Grava no Sheets (fonte da verdade). Se falhar, registra fallback.
       try {
@@ -78,7 +81,7 @@ app.post("/api/inscricao", (req, res) => {
       // 3) E-mails em segundo plano (best-effort); falha vira log, não trava o usuário
       (async () => {
         try {
-          await sendOrgEmail(body, { timestamp: ts }, file.buffer, file.originalname);
+          await sendOrgEmail(body, { timestamp: ts, fileUrl }, file.buffer, file.originalname);
         } catch (e) {
           console.error("[inscricao] e-mail ADM falhou:", e.message);
           await appendFallbackLog(body, fileName, ts, ["orgEmail: " + e.message]);

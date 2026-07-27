@@ -63,6 +63,9 @@ export const config = {
   },
 
   maxUploadMB: parseInt(process.env.MAX_UPLOAD_MB || "10", 10),
+
+  // URL pública do site (para montar o link do PDF). Se vazio, é derivada da requisição.
+  publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
 };
 
 export function missingConfig() {

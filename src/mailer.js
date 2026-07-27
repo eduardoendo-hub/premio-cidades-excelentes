@@ -48,7 +48,11 @@ export async function sendOrgEmail(data, meta, fileBuffer, fileName) {
        <strong>Município:</strong> ${esc(normalizeValue(data.cidade))} / ${esc(normalizeValue(data.estado))}<br>
        <strong>Recebido em:</strong> ${esc(meta.timestamp)}</p>
     <table style="border-collapse:collapse;width:100%;font-size:13px">${buildRowsHtml(data)}</table>
-    <p style="margin-top:16px;color:#666">Anexo: <strong>${esc(fileName)}</strong></p>
+    <p style="margin-top:16px">
+      <strong>PDF do projeto:</strong> ${esc(fileName)}<br>
+      ${meta.fileUrl ? `<a href="${esc(meta.fileUrl)}" style="display:inline-block;margin-top:6px;padding:8px 16px;background:#003a70;color:#fff;text-decoration:none;border-radius:4px">⬇ Baixar PDF</a>` : ""}
+      <br><span style="color:#666;font-size:12px">(o PDF também vai anexado a este e-mail)</span>
+    </p>
   </div>`;
 
   return t.sendMail({
