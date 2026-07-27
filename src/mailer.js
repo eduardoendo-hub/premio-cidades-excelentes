@@ -44,6 +44,7 @@ export function buildOrgEmailText(data, meta) {
   if (meta.pageUrl) lines.push(`Page URL: ${meta.pageUrl}`);
   if (meta.userAgent) lines.push(`User Agent: ${meta.userAgent}`);
   if (meta.ip) lines.push(`Remote IP: ${meta.ip}`);
+  lines.push("Powered by: Band");
   return lines.join("\n");
 }
 
@@ -67,6 +68,7 @@ function buildOrgEmailHtml(data, meta, fileName) {
     meta.pageUrl ? `Page URL: ${esc(meta.pageUrl)}` : "",
     meta.userAgent ? `User Agent: ${esc(meta.userAgent)}` : "",
     meta.ip ? `Remote IP: ${esc(meta.ip)}` : "",
+    "Powered by: Band",
   ].filter(Boolean).join("<br>");
   return `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:14px;max-width:760px">
     ${parts.join("\n")}
