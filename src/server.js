@@ -194,9 +194,23 @@ app.get(/.*/, (req, res) => {
   res.status(404).send("Página não encontrada");
 });
 
-app.listen(config.port, () => {
+// Um erro solto (ex.: socket de e-mail) nunca deve derrubar o processo
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason?.message || reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err?.message || err);
+});
+
+// Garante a pasta data/ para o log de fallback
+try {
+  fs.mkdirSync(path.join(config.root, "data"), { recursive: true });
+} catch {}
+
+// Bind explícito em IPv4 (0.0.0.0) para o proxy do Coolify alcançar
+app.listen(config.port, "0.0.0.0", () => {
   const miss = missingConfig();
-  console.log(`\n▶ Prêmio Cidades Excelentes rodando em http://localhost:${config.port}`);
+  console.log(`\n▶ Prêmio Cidades Excelentes rodando em 0.0.0.0:${config.port}`);
   if (miss.length) {
     console.log(`⚠  Config pendente (.env): ${miss.join(", ")}`);
     console.log(`   O site é servido normalmente, mas os formulários só funcionam 100% após configurar.`);
