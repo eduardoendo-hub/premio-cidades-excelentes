@@ -67,6 +67,18 @@ app.post("/api/inscricao", (req, res) => {
         config.publicBaseUrl || `${req.protocol}://${req.get("host")}`;
       const fileUrl = `${baseUrl}/uploads/${fileName}`;
 
+      // Metadados para o rodapé do e-mail (formato do site antigo)
+      const now = new Date();
+      const emailMeta = {
+        timestamp: ts,
+        fileUrl,
+        dateLong: now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" }),
+        time: now.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+        pageUrl: req.get("referer") || `${baseUrl}/envie-seu-projeto-2026/`,
+        userAgent: req.get("user-agent") || "",
+        ip: req.ip || req.socket?.remoteAddress || "",
+      };
+
       // 1) Grava no Sheets (fonte da verdade). Se falhar, registra fallback.
       try {
         await appendInscricao(body, { fileName, fileUrl, timestamp: ts });
@@ -81,7 +93,7 @@ app.post("/api/inscricao", (req, res) => {
       // 3) E-mails em segundo plano (best-effort); falha vira log, não trava o usuário
       (async () => {
         try {
-          await sendOrgEmail(body, { timestamp: ts, fileUrl }, file.buffer, file.originalname);
+          await sendOrgEmail(body, emailMeta, file.buffer, file.originalname);
         } catch (e) {
           console.error("[inscricao] e-mail ADM falhou:", e.message);
           await appendFallbackLog(body, fileName, ts, ["orgEmail: " + e.message]);

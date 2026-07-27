@@ -40,6 +40,52 @@ export const FILE_FIELD = {
   ext: [".pdf"],
 };
 
+// Layout do e-mail para o ADM — replica o formato do site antigo (Elementor):
+// seções + perguntas completas como rótulo.
+export const EMAIL_LAYOUT = [
+  {
+    section: "Responsável pela Inscrição:",
+    items: [
+      ["nome_completo", "Nome Completo"],
+      ["cargo", "Cargo"],
+      ["email", "Email"],
+      ["endereco", "Endereço"],
+      ["cidade", "Cidade"],
+      ["estado", "Estado"],
+      ["site_municipio", "Site do município"],
+      ["nome_projeto", "Nome do projeto"],
+      ["secretaria_orgao", "Secretaria/Órgão municipal responsável"],
+      ["principal_indicador", "Selecione o principal indicador impactado pelo seu projeto"],
+      ["outro_indicador", "Selecione eventualmente outro indicador também impactado pelo seu projeto"],
+    ],
+  },
+  {
+    section: "DETALHAMENTO DO PROJETO:",
+    items: [
+      ["obj_qualitativos", "Qual(is) objetivos qualitativos?"],
+      ["obj_quantitativos", "Qual(is) objetivos quantitativos?"],
+      ["meta_financeira", "Possui meta financeira? Qual?"],
+      ["publico_alvo", "Qual é o público alvo? A quem se dirige o projeto?"],
+      ["Data_Inicio", "Quando foi seu início?"],
+      ["Data_Termino", "Quando foi/será seu término?"],
+      ["principais_acoes", "Informar as principais ações"],
+      ["custo_financeiro", "Qual o custo financeiro estimado/realizado para o desenvolvimento do projeto? Qual a fonte de financiamento?"],
+      ["pessoas_envolvidas", "Quantas pessoas diretamente envolvidas no desenvolvimento do projeto? Quais os parceiros estratégicos envolvidos? (Outros municípios, secretarias, empresas, ONGs, etc)."],
+    ],
+  },
+  {
+    section: "MATÉRIA OU DEPOIMENTOS FORMAIS DE TERCEIROS:",
+    items: [
+      ["replicabilidade", "Existe a possibilidade de replicabilidade do projeto para outras Prefeituras?"],
+      ["repercussao_midia", "Como ponto importante da avaliação do projeto, gostaríamos de saber se esse projeto teve repercussão na mídia"],
+      ["link_materias", "Solicitamos que envie o link das matérias de jornais e revistas que comprove a repercussão"],
+      ["link_depoimentos", "Solicitamos que envie o link com os depoimentos formais de cidadãos (Nome completo, CPF e assinatura) que comprove a repercussão"],
+      ["anexo_pdf", "Com o objetivo de melhor contextualizar o projeto, solicitamos que sejam anexados fotos, apresentações, termos de abertura, relatórios, etc. Tudo em um (1) arquivo no formato PDF de até 10 páginas e tamanho de 10 mb."],
+      ["termos_condicoes", "Li e aceito termos e condições"],
+    ],
+  },
+];
+
 export const CONTATO_FIELDS = [
   { key: "name", label: "Nome", type: "text", required: true },
   { key: "field_34f4e69", label: "Telefone", type: "text", required: false },
