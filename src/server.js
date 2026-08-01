@@ -145,15 +145,15 @@ async function appendFallbackLog(body, fileName, ts, problems) {
 // ---- Arquivos enviados (acesso restrito por padrão; ajuste conforme necessário) ----
 app.use("/uploads", express.static(config.uploadsDir));
 
-// Cabeçalhos de cache: HTML nunca fica em cache no edge (Cloudflare) para
-// as atualizações aparecerem na hora; assets podem ser cacheados.
+// Cabeçalhos de cache "saudáveis": o Cloudflare pode cachear (performance),
+// mas com TTL curto no HTML para as atualizações aparecerem sozinhas em poucos
+// minutos. Vale quando a regra "Cache Everything" do domínio respeitar a origem
+// (Edge Cache TTL = Respect Existing Headers). Assets ficam mais tempo em cache.
 function setCacheHeaders(res, p) {
   if (p.endsWith(".html")) {
-    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
-    // Cloudflare respeita este header para o cache do edge (evita HTML velho)
-    res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
   } else {
-    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("Cache-Control", "public, max-age=86400");
   }
 }
 
