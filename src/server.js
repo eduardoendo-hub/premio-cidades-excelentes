@@ -145,13 +145,23 @@ async function appendFallbackLog(body, fileName, ts, problems) {
 // ---- Arquivos enviados (acesso restrito por padrão; ajuste conforme necessário) ----
 app.use("/uploads", express.static(config.uploadsDir));
 
+// Cabeçalhos de cache: HTML nunca fica em cache no edge (Cloudflare) para
+// as atualizações aparecerem na hora; assets podem ser cacheados.
+function setCacheHeaders(res, p) {
+  if (p.endsWith(".html")) {
+    res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+    // Cloudflare respeita este header para o cache do edge (evita HTML velho)
+    res.setHeader("Cloudflare-CDN-Cache-Control", "no-store");
+  } else {
+    res.setHeader("Cache-Control", "public, max-age=3600");
+  }
+}
+
 // ---- Site estático espelhado ----
 app.use(
   express.static(config.siteDir, {
     extensions: ["html"],
-    setHeaders(res, p) {
-      if (p.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
-    },
+    setHeaders: setCacheHeaders,
   })
 );
 
@@ -160,6 +170,7 @@ app.get(/.*/, (req, res) => {
   const rel = decodeURIComponent(req.path.replace(/^\/+/, ""));
   const candidate = path.join(config.siteDir, rel, "index.html");
   if (candidate.startsWith(config.siteDir) && fs.existsSync(candidate)) {
+    setCacheHeaders(res, candidate);
     return res.sendFile(candidate);
   }
   const notFound = path.join(config.siteDir, "404", "index.html");
